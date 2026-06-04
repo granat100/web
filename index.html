@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kalkulačka</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(160deg, #eef2ff, #f8fafc);
+        font-family: Arial, sans-serif;
+      }
+
+      .calculator {
+        width: min(92vw, 360px);
+        padding: 1rem;
+        border-radius: 16px;
+        background: #0f172a;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.3);
+        color: #e2e8f0;
+      }
+
+      .title {
+        margin: 0 0 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .display {
+        min-height: 72px;
+        margin-bottom: 0.75rem;
+        border-radius: 12px;
+        background: #020617;
+        padding: 0.75rem;
+        text-align: right;
+        display: grid;
+        align-items: end;
+      }
+
+      .expression {
+        min-height: 1rem;
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+
+      .value {
+        font-size: 2rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+
+      .keys {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+      }
+
+      button {
+        border: 0;
+        border-radius: 10px;
+        padding: 0.8rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .num {
+        background: #1e293b;
+        color: #e2e8f0;
+      }
+
+      .op {
+        background: #334155;
+        color: #f8fafc;
+      }
+
+      .action {
+        background: #475569;
+        color: #f8fafc;
+      }
+
+      .equal {
+        background: #2563eb;
+        color: #fff;
+      }
+
+      .zero {
+        grid-column: span 2;
+      }
+
+      .hint {
+        margin: 0.7rem 0 0;
+        font-size: 0.82rem;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="calculator" aria-label="Kalkulačka">
+      <h1 class="title">Kalkulačka</h1>
+      <div class="display" aria-live="polite">
+        <div id="expression" class="expression"></div>
+        <div id="value" class="value">0</div>
+      </div>
+
+      <div class="keys">
+        <button class="action" type="button" data-action="clear">C</button>
+        <button class="action" type="button" data-action="backspace">⌫</button>
+        <button class="op" type="button" data-op="/">÷</button>
+        <button class="op" type="button" data-op="*">×</button>
+
+        <button class="num" type="button" data-digit="7">7</button>
+        <button class="num" type="button" data-digit="8">8</button>
+        <button class="num" type="button" data-digit="9">9</button>
+        <button class="op" type="button" data-op="-">−</button>
+
+        <button class="num" type="button" data-digit="4">4</button>
+        <button class="num" type="button" data-digit="5">5</button>
+        <button class="num" type="button" data-digit="6">6</button>
+        <button class="op" type="button" data-op="+">+</button>
+
+        <button class="num" type="button" data-digit="1">1</button>
+        <button class="num" type="button" data-digit="2">2</button>
+        <button class="num" type="button" data-digit="3">3</button>
+        <button class="equal" type="button" data-action="equals">=</button>
+
+        <button class="num zero" type="button" data-digit="0">0</button>
+        <button class="num" type="button" data-action="decimal">.</button>
+      </div>
+
+      <p class="hint">Můžeš používat i fyzickou klávesnici (0–9, +, -, *, /, Enter, Backspace).</p>
+    </main>
+
+    <script>
+      const expressionEl = document.getElementById('expression');
+      const valueEl = document.getElementById('value');
+      const keysEl = document.querySelector('.keys');
+
+      let current = '0';
+      let previous = null;
+      let operation = null;
+      let justCalculated = false;
+
+      function format(value) {
+        if (value === Infinity || value === -Infinity) {
+          return 'Nelze dělit nulou';
+        }
+        if (Number.isNaN(value)) {
+          return 'Neplatný výpočet';
+        }
+        return String(value);
+      }
+
+      function render() {
+        valueEl.textContent = current;
+        expressionEl.textContent = operation && previous !== null ? `${previous} ${operation}` : '';
+      }
+
+      function reset() {
+        current = '0';
+        previous = null;
+        operation = null;
+        justCalculated = false;
+        render();
+      }
+
+      function resetIfJustCalculated() {
+        if (justCalculated && operation === null) {
+          current = '0';
+          justCalculated = false;
+        }
+      }
+
+      function appendDigit(digit) {
+        resetIfJustCalculated();
+
+        current = current === '0' ? digit : current + digit;
+        render();
+      }
+
+      function appendDecimal() {
+        resetIfJustCalculated();
+
+        if (!current.includes('.')) {
+          current += '.';
+          render();
+        }
+      }
+
+      function backspace() {
+        if (justCalculated && operation === null) {
+          resetIfJustCalculated();
+        } else {
+          current = current.length > 1 ? current.slice(0, -1) : '0';
+        }
+        render();
+      }
+
+      function compute(a, b, op) {
+        if (op === '+') return a + b;
+        if (op === '-') return a - b;
+        if (op === '*') return a * b;
+        if (op === '/') return b === 0 ? Infinity : a / b;
+        return b;
+      }
+
+      function setOperation(nextOp) {
+        const input = Number(current);
+        if (!Number.isFinite(input)) {
+          reset();
+          return;
+        }
+
+        if (operation && previous !== null && !justCalculated) {
+          const result = compute(previous, input, operation);
+          if (!Number.isFinite(result)) {
+            current = format(result);
+            previous = null;
+            operation = null;
+            justCalculated = true;
+            render();
+            return;
+          }
+          current = format(result);
+          previous = result;
+        } else {
+          previous = input;
+        }
+
+        operation = nextOp;
+        justCalculated = false;
+        current = '0';
+        render();
+      }
+
+      function equals() {
+        if (operation === null || previous === null) {
+          return;
+        }
+
+        const input = Number(current);
+        if (!Number.isFinite(input)) {
+          reset();
+          return;
+        }
+        const result = compute(previous, input, operation);
+        current = format(result);
+        previous = null;
+        operation = null;
+        justCalculated = true;
+        render();
+      }
+
+      keysEl.addEventListener('click', (event) => {
+        const button = event.target.closest('button');
+        if (!button) {
+          return;
+        }
+
+        const digit = button.dataset.digit;
+        const op = button.dataset.op;
+        const action = button.dataset.action;
+
+        if (digit) appendDigit(digit);
+        if (op) setOperation(op);
+        if (action === 'decimal') appendDecimal();
+        if (action === 'backspace') backspace();
+        if (action === 'clear') reset();
+        if (action === 'equals') equals();
+      });
+
+      document.addEventListener('keydown', (event) => {
+        const key = event.key;
+
+        if (/^[0-9]$/.test(key)) {
+          appendDigit(key);
+          return;
+        }
+
+        if (key === '.' || key === ',') {
+          appendDecimal();
+          return;
+        }
+
+        if (['+', '-', '*', '/'].includes(key)) {
+          setOperation(key);
+          return;
+        }
+
+        if (key === 'Enter' || key === '=') {
+          event.preventDefault();
+          equals();
+          return;
+        }
+
+        if (key === 'Backspace') {
+          backspace();
+          return;
+        }
+
+        if (key === 'Escape') {
+          reset();
+        }
+      });
+
+      render();
+    </script>
+  </body>
+</html>
