@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jednoduchá kalkulačka</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2rem;
+      }
+      .calculator {
+        display: grid;
+        gap: 0.75rem;
+        max-width: 320px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      input,
+      select,
+      button {
+        padding: 0.5rem;
+        font-size: 1rem;
+      }
+      #result {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Jednoduchá webová kalkulačka</h1>
+
+    <div class="calculator">
+      <div class="row">
+        <input id="first" type="number" step="any" value="0" />
+        <select id="operation" aria-label="Operace">
+          <option value="+">+</option>
+          <option value="-">-</option>
+          <option value="*">×</option>
+          <option value="/">÷</option>
+        </select>
+        <input id="second" type="number" step="any" value="0" />
+      </div>
+      <button id="calculate" type="button">Spočítat</button>
+      <div id="result" aria-live="polite">Výsledek: 0</div>
+    </div>
+
+    <script>
+      const firstInput = document.getElementById('first');
+      const secondInput = document.getElementById('second');
+      const operationInput = document.getElementById('operation');
+      const result = document.getElementById('result');
+
+      function calculate() {
+        const first = Number(firstInput.value);
+        const second = Number(secondInput.value);
+        const operation = operationInput.value;
+
+        if (operation === '/' && second === 0) {
+          result.textContent = 'Výsledek: Nelze dělit nulou';
+          return;
+        }
+
+        let value = 0;
+
+        if (operation === '+') {
+          value = first + second;
+        } else if (operation === '-') {
+          value = first - second;
+        } else if (operation === '*') {
+          value = first * second;
+        } else {
+          value = first / second;
+        }
+
+        result.textContent = `Výsledek: ${value}`;
+      }
+
+      document.getElementById('calculate').addEventListener('click', calculate);
+    </script>
+  </body>
+</html>
