@@ -153,10 +153,13 @@
       let justCalculated = false;
 
       function format(value) {
-        if (!Number.isFinite(value)) {
+        if (value === Infinity || value === -Infinity) {
           return 'Nelze dělit nulou';
         }
-        return Number(value.toString()).toString();
+        if (Number.isNaN(value)) {
+          return 'Neplatný výpočet';
+        }
+        return String(value);
       }
 
       function render() {
@@ -172,21 +175,22 @@
         render();
       }
 
-      function appendDigit(digit) {
+      function resetIfJustCalculated() {
         if (justCalculated && operation === null) {
           current = '0';
           justCalculated = false;
         }
+      }
+
+      function appendDigit(digit) {
+        resetIfJustCalculated();
 
         current = current === '0' ? digit : current + digit;
         render();
       }
 
       function appendDecimal() {
-        if (justCalculated && operation === null) {
-          current = '0';
-          justCalculated = false;
-        }
+        resetIfJustCalculated();
 
         if (!current.includes('.')) {
           current += '.';
@@ -196,8 +200,7 @@
 
       function backspace() {
         if (justCalculated && operation === null) {
-          current = '0';
-          justCalculated = false;
+          resetIfJustCalculated();
         } else {
           current = current.length > 1 ? current.slice(0, -1) : '0';
         }
@@ -221,8 +224,16 @@
 
         if (operation && previous !== null && !justCalculated) {
           const result = compute(previous, input, operation);
+          if (!Number.isFinite(result)) {
+            current = format(result);
+            previous = null;
+            operation = null;
+            justCalculated = true;
+            render();
+            return;
+          }
           current = format(result);
-          previous = Number.isFinite(result) ? result : null;
+          previous = result;
         } else {
           previous = input;
         }
